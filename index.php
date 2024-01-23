@@ -1,4 +1,32 @@
 <?php
+
+$horarios = [
+    'seg' => [strtotime('08:00'), strtotime('17:00')],
+    'ter' => [strtotime('08:00'), strtotime('17:00')],
+    'qua' => [strtotime('08:00'), strtotime('17:00')],
+    'qui' => [strtotime('08:00'), strtotime('17:00')],
+    'sex' => [strtotime('08:00'), strtotime('17:00')],
+    'sab' => null, // Sem expediente
+    'dom' => null  // Sem expediente
+];
+
+$feriados = [
+    '2024-01-01',
+    '2024-01-25',
+    '2024-02-12',
+    '2024-02-13',
+    '2024-03-29',
+    '2024-04-21',
+    '2024-05-01',
+    '2024-05-30',
+    '2024-09-07',
+    '2024-10-12',
+    '2024-11-02',
+    '2024-11-15',
+    '2024-11-20',
+    '2024-12-25'
+];
+
 function dataSemana($data)
 {
     $data_semana = [
@@ -16,57 +44,7 @@ function dataSemana($data)
     return $data_semana[date('l', $timestamp)];
 }
 
-function calcularTempoTrabalhadoNoDia($data, $horaInicio, $horaFim)
-{
-    $dataHoraInicio = new DateTime("$data $horaInicio:00");
-    $dataHoraFim = new DateTime("$data $horaFim:00");
-    $agora = new DateTime();
-
-    $intervalo = $dataHoraInicio->diff(min($dataHoraFim, $agora));
-
-    return $intervalo->h + ($intervalo->i / 60) + ($intervalo->s / 3600); 
-}
-
-$horarios = [
-    'seg' => [strtotime('08:00'), strtotime('17:00')],
-    'ter' => [strtotime('08:00'), strtotime('17:00')],
-    'qua' => [strtotime('08:00'), strtotime('17:00')],
-    'qui' => [strtotime('08:00'), strtotime('17:00')],
-    'sex' => [strtotime('08:00'), strtotime('17:00')],
-    'sab' => null, // Sem expediente
-    'dom' => null  // Sem expediente
-];
-
-function horasUteisPorDia($horarios)
-{
-    $horasUteis = 0;
-
-    foreach ($horarios as $dia => $horario) {
-        if ($horario !== null) {
-            $horaInicio = date('H', $horario[0]);
-            $horaFim = date('H', $horario[1]);
-            $horasUteis += $horaFim - $horaInicio;
-        }
-    }
-
-    return $horasUteis;
-}
-
-
-function encontrarProximoDiaUtilEHorario($data, $horarios)
-{
-    $dataAtual = new DateTime($data);
-    $diaAtual = dataSemana($data);
-
-    while (!isset($horarios[$diaAtual]) || $horarios[$diaAtual] === null) {
-        $dataAtual->modify('+1 day');
-        $diaAtual = dataSemana($dataAtual->format('Y-m-d'));
-    }
-
-    return $dataAtual;
-}
-
-function calcularConclusaoSLA($dataInicioSLA, $sla, $horarios)
+function calcularConclusaoSLA($dataInicioSLA, $sla, $horarios, $feriados)
 {
     $data = new DateTime();
     $data->setTimestamp($dataInicioSLA);
@@ -74,8 +52,8 @@ function calcularConclusaoSLA($dataInicioSLA, $sla, $horarios)
     $diaAtual = dataSemana($data->format('Y-m-d'));
 
     while ($sla > 0) {
-        // Se o dia não tiver expediente, avança para o próximo dia útil
-        while (!isset($horarios[$diaAtual]) || $horarios[$diaAtual] === null) {
+        // Se o dia não tiver expediente ou for feriado, avança para o próximo dia útil
+        while (!isset($horarios[$diaAtual]) || $horarios[$diaAtual] === null || in_array($data->format('Y-m-d'), $feriados)) {
             $data->modify('+1 day');
             $diaAtual = dataSemana($data->format('Y-m-d'));
         }
@@ -107,7 +85,7 @@ function calcularConclusaoSLA($dataInicioSLA, $sla, $horarios)
             do {
                 $proximoDiaUtil->modify('+1 day');
                 $diaAtual = dataSemana($proximoDiaUtil->format('Y-m-d'));
-            } while (!isset($horarios[$diaAtual]) || $horarios[$diaAtual] === null);
+            } while (!isset($horarios[$diaAtual]) || $horarios[$diaAtual] === null || in_array($proximoDiaUtil->format('Y-m-d'), $feriados));
 
             $horaInicioProximoDia = date('H', $horarios[$diaAtual][0]);
 
@@ -127,10 +105,13 @@ function calcularConclusaoSLA($dataInicioSLA, $sla, $horarios)
 
 // Exemplo de uso:
 $dataInicioSLAExemplo = strtotime('2024-01-22 08:00:00');
-$slaExemplo = 50;
+$slaExemplo = 27;
 
-$dataConclusaoSLA = calcularConclusaoSLA($dataInicioSLAExemplo, $slaExemplo, $horarios);
+$dataConclusaoSLA = calcularConclusaoSLA($dataInicioSLAExemplo, $slaExemplo, $horarios, $feriados);
 echo "Data de conclusão do SLA: $dataConclusaoSLA\n";
+
+
+
 
 
 
