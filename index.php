@@ -48,6 +48,7 @@ function calcularConclusaoSLA($dataInicioSLA, $sla, $horarios, $feriados)
 {
     $data = new DateTime();
     $data->setTimestamp($dataInicioSLA);
+    $data->modify('+1 hour');
 
     $diaAtual = dataSemana($data->format('Y-m-d'));
 
@@ -105,29 +106,7 @@ function calcularConclusaoSLA($dataInicioSLA, $sla, $horarios, $feriados)
 
 // Exemplo de uso:
 $dataInicioSLAExemplo = strtotime('2024-01-22 08:00:00');
-$slaExemplo = 27;
+$slaExemplo = 40;
 
 $dataConclusaoSLA = calcularConclusaoSLA($dataInicioSLAExemplo, $slaExemplo, $horarios, $feriados);
 echo "Data de conclusão do SLA: $dataConclusaoSLA\n";
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
