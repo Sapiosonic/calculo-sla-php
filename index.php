@@ -1,13 +1,23 @@
 <?php
 
+// $horarios = [
+//     'seg' => [strtotime('08:00'), strtotime('17:00')],
+//     'ter' => [strtotime('08:00'), strtotime('17:00')],
+//     'qua' => [strtotime('08:00'), strtotime('17:00')],
+//     'qui' => [strtotime('08:00'), strtotime('17:00')],
+//     'sex' => [strtotime('08:00'), strtotime('17:00')],
+//     'sab' => [strtotime('00:00'), strtotime('00:00')],
+//     'dom' => [strtotime('00:00'), strtotime('00:00')]
+// ];
+
 $horarios = [
-    'seg' => [strtotime('08:00'), strtotime('17:00')],
-    'ter' => [strtotime('08:00'), strtotime('17:00')],
-    'qua' => [strtotime('08:00'), strtotime('17:00')],
-    'qui' => [strtotime('08:00'), strtotime('17:00')],
-    'sex' => [strtotime('08:00'), strtotime('17:00')],
-    'sab' => null, // Sem expediente
-    'dom' => null  // Sem expediente
+    'seg' => [strtotime('00:00'), strtotime('00:00')],
+    'ter' => [strtotime('00:00'), strtotime('00:00')],
+    'qua' => [strtotime('00:00'), strtotime('00:00')],
+    'qui' => [strtotime('00:00'), strtotime('00:00')],
+    'sex' => [strtotime('00:00'), strtotime('00:00')],
+    'sab' => [strtotime('00:00'), strtotime('00:00')],
+    'dom' => [strtotime('00:00'), strtotime('00:00')]
 ];
 
 $feriados = [
@@ -46,6 +56,21 @@ function dataSemana($data)
 
 function calcularConclusaoSLA($dataInicioSLA, $sla, $horarios, $feriados)
 {
+    //Checagem adicional: Se todos os horaários de trabalho estiverem vazios ou a data de inicio for posterior ao fim dos horarios de trabalho
+    $allEmptyHours = true;
+    foreach ($horarios as $horario) {
+        if ($horario !== null) {
+            $allEmptyHours = false;
+            break;
+        }
+    }
+
+    $dataAtual = new DateTime();
+    
+    if ($allEmptyHours || $dataAtual > date_create_from_format('H:i', date('H:i', max($horarios['seg'][1], $horarios['ter'][1], $horarios['qua'][1], $horarios['qui'][1], $horarios['sex'][1])))) {
+        return $dataAtual->format('Y-m-d H:00:00'); // Retorna a data atual e horas com minutos e segundos definidos como zero 
+    }
+
     $data = new DateTime();
     $data->setTimestamp($dataInicioSLA);
 
@@ -104,8 +129,8 @@ function calcularConclusaoSLA($dataInicioSLA, $sla, $horarios, $feriados)
 }
 
 // Exemplo de uso:
-$dataInicioSLAExemplo = strtotime('2024-01-22 08:00:00');
-$slaExemplo = 27;
+$dataInicioSLAExemplo = strtotime('2024-02-16 16:00:00');
+$slaExemplo = 40;
 
 $dataConclusaoSLA = calcularConclusaoSLA($dataInicioSLAExemplo, $slaExemplo, $horarios, $feriados);
 echo "Data de conclusão do SLA: $dataConclusaoSLA\n";
